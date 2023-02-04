@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
 contract Concert{
 
     uint256 public ConcertID;
     uint256 public ArtistID;
-    uint8 public listingPrice = 0.001 ether;
+    uint256 public ArtistListingPrice = 0.001 ether;
+    uint256 public ConcertListingPrice = 0.001 ether;
     struct Artist{
         string ArtistName;
         address ArtistNFT;
-        mapping(uint256=>ConcertData) public totalConcerts;
     }
 
     struct ConcertData{
@@ -22,15 +24,21 @@ contract Concert{
 
     mapping(uint256=>Artist) public ArtistData;
 
-    function createArtist(string _ArtistName) public {
-        require(_ArtistName != "", "Enter a valid name");
-        revert(msg.value == listingPrice, "Insufficient ether");
-        Artist _artist = Artist(_ArtistName)                
+    function createArtist(string memory _ArtistName,string memory _name, string memory _symbol, uint256 _maxsupply) public payable {
+        require(msg.value == ArtistListingPrice, "Insufficient ether");
+        address artistAddress = createNFT( _name,  _symbol, _maxsupply);
+        Artist memory _artist = Artist(_ArtistName, artistAddress);   
+        ArtistData[ArtistID] = _artist;
+        ArtistID++;           
     }
 
-    function createConcert(string name, string artistName) public {
-        require(name != "", "Enter a valid name");
-        require()
+    function createConcert(string memory name, string memory artistName) public payable {
+        require(msg.value == ConcertListingPrice, "Paid ether is not sufficient");
+    }
+
+    function createNFT(string memory _name, string memory _symbol, uint256 _maxsupply) public returns(address){
+        ArtistNFT nftContract = new ArtistNFT(_name,_symbol,_maxsupply);
+        return address(nftContract);
     }
 
     
@@ -39,9 +47,17 @@ contract Concert{
 
 
 contract ArtistNFT is ERC721{
-    constructor(string _name, string _symbol) ERC721(_name, _symbol){}
+    uint256 public tokenID=1;
+    uint256 public immutable maxsupply;
+    constructor(string memory _name, string memory _symbol, uint256 _maxsupply) ERC721(_name, _symbol){
+        maxsupply = _maxsupply;
+    }
 
-    function mint() public{
-        _mint();
+    function mint(uint256 _ticketPrice) public{
+        _mint(msg.sender, tokenID);
+        tokenID++;
     }
 }
+
+
+// revert(msg.value==_ticketPrice, "Pay the required price");
